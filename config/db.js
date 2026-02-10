@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
+dotenv = require("dotenv")
 
 const connectDB = async () => {
-  await mongoose.connect("mongodb://127.0.0.1:27017/chatapp");
+  await mongoose.connect(process.env.MONGODB_URI);
   console.log("MongoDB connected");
 };
 
