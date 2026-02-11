@@ -65,7 +65,7 @@ module.exports = (io) => {
           console.log("Chat not accepted. Message blocked.");
           return;
         }
-
+        // ========================
         // 🔐 Encrypt message (URL or text both)
         const encryptedMessage = encrypt(message);
 
@@ -87,6 +87,41 @@ module.exports = (io) => {
         console.error("sendMessage error:", err);
       }
     });
+
+    // 👀 MARK MESSAGES AS SEEN
+// =========================
+socket.on("markSeen", async ({ chatId, userId }) => {
+  try {
+
+    const unreadMessages = await Message.find({
+      chatId,
+      receiverId: userId,
+      seen: false,
+    });
+
+    await Message.updateMany(
+      {
+        chatId,
+        receiverId: userId,
+        seen: false,
+      },
+      { $set: { seen: true } }
+    );
+
+    console.log("Updated:", unreadMessages.length);
+
+    // 🔥 Notify ONLY original sender
+    unreadMessages.forEach(msg => {
+      io.to(msg.senderId.toString()).emit("messagesSeen", {
+        messageId: msg._id,
+      });
+    });
+
+  } catch (err) {
+    console.error("markSeen error:", err);
+  }
+});
+
 
     // =========================
     // 📞📹 WEBRTC CALL EVENTS
