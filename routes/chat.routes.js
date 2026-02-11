@@ -2,6 +2,7 @@ const express = require("express");
 const ChatRequest = require("../models/ChatRequest");
 const Message = require("../models/Message");
 const auth = require("../middleware/auth");
+const User = require("../models/Users");
 const { decrypt } = require("../utils/crypto");
 
 const router = express.Router();
@@ -46,6 +47,46 @@ router.post("/accept", auth, async (req, res) => {
   res.json({ message: "Chat accepted" });
 });
 
+
+// Load accepted chats 
+router.get("/friends", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const messages = await Message.find({
+      $or: [
+        { senderId: userId },
+        { receiverId: userId }
+      ]
+    });
+
+    // Get unique user IDs
+    const friendIds = new Set();
+
+    messages.forEach((msg) => {
+      if (msg.senderId.toString() !== userId) {
+        friendIds.add(msg.senderId.toString());
+      }
+      if (msg.receiverId.toString() !== userId) {
+        friendIds.add(msg.receiverId.toString());
+      }
+    });
+
+    // Convert Set to Array
+    const idsArray = Array.from(friendIds);
+
+    // Fetch user details (User model example)
+    const friends = await User.find({
+      _id: { $in: idsArray }
+    }).select("-password");
+
+    res.json(friends);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
 
 // GET ACCEPTED CHATS
 router.get("/accepted", auth, async (req, res) => {

@@ -50,28 +50,42 @@ router.post("/register", async (req, res) => {
 
 // LOGIN
 router.post("/login", async (req, res) => {
-  console.log("LOGIN BODY:", req.body);
-  console.log("EMAIL:", req.body?.email);
-  console.log("PASSWORD:", req.body?.password);
+  try {
+    const { email, password } = req.body;
 
-  const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email or password missing" });
+    }
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email or password missing" });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return res.status(400).json({ message: "Wrong password" });
+    }
+
+    user.isOnline = true;
+    await user.save();
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    const { password: _, ...userData } = user.toObject();
+
+    res.json({ token, user: userData });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
-
-  const user = await User.findOne({ email });
-  if (!user) return res.status(400).json({ message: "User not found" });
-
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(400).json({ message: "Wrong password" });
-
-  user.isOnline = true;
-  await user.save();
-
-  const token = jwt.sign({ id: user._id }, "SECRET_KEY");
-  res.json({ token });
 });
+
 
 
 // logout 
