@@ -19,7 +19,7 @@ connectDB();
 
 // ✅ CORS
 const allowedOrigins = [
-  "https://privatechatapplication.netlify.app/",
+  "https://privatechatapplication.netlify.app",
   // process.env.FRONTEND_URL,
 ];
 
