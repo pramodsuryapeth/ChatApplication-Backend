@@ -76,15 +76,40 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     const { password: _, ...userData } = user.toObject();
 
-    res.json({ token, user: userData });
+    res.json({ user: userData }); 
 
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.get("/me", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    res.json(user);
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
 
 
 

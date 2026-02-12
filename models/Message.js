@@ -16,20 +16,26 @@ const messageSchema = new mongoose.Schema(
 
     message: {
       type: String,
-      
     },
 
     type: {
-  type: String,
-  enum: ["text", "image", "video"], // ✅ allowed values
-  default: "text",
-},
+      type: String,
+      enum: ["text", "image", "video"],
+      default: "text",
+    },
 
-    // 🔥 ADD THIS FIELD (auto delete after 24 hours)
+    // ✅ Reply field
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
+
+    // Auto delete after 24 hours
     expiresAt: {
       type: Date,
-      default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-      index: { expires: 0 }, // TTL index
+      default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
+      index: { expires: 0 },
     },
 
     seen: { type: Boolean, default: false },
@@ -37,7 +43,6 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// existing index (UNCHANGED)
 messageSchema.index({ chatId: 1, createdAt: 1 });
 
 module.exports = mongoose.model("Message", messageSchema);

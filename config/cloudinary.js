@@ -19,7 +19,12 @@ const uploadVideoToCloudinary = (fileBuffer, fileName) => {
         folder: 'videos',
         public_id: fileName.split('.')[0],
         chunk_size: 6000000, // 6MB chunks
-        timeout: 120000 // 2 minutes timeout
+        timeout: 120000, // 2 minutes timeout
+                transformation: [
+          { width: 800, height: 450, crop: 'limit' },
+          { quality: 100 }
+        ]
+
       },
       (error, result) => {
         if (error) {
@@ -41,9 +46,11 @@ const uploadImageToCloudinary = (fileBuffer, fileName) => {
         resource_type: 'image',
         folder: 'images',
         public_id: fileName.split('.')[0],
-        transformation: [
-          { width: 800, height: 450, crop: 'limit' }
+                transformation: [
+          { width: 800, height: 450, crop: 'limit' },
+          { quality: 100 }
         ]
+
       },
       (error, result) => {
         if (error) {

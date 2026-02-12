@@ -100,18 +100,29 @@ router.get("/accepted", auth, async (req, res) => {
 
 
 // LOAD MESSAGES
-router.get("/messages/:chatId", auth, async (req, res) => {
-  const messages = await Message.find({
-    chatId: req.params.chatId,
-  }).sort({ createdAt: 1 });
+router.get("/messages/:chatId", async (req, res) => {
+  try {
+    const { chatId } = req.params;
 
-    const decryptedMessages = messages.map(msg => ({
-    ...msg._doc,
-    message: decrypt(msg.message),
-  }));
+    const messages = await Message.find({ chatId })
+      .sort({ createdAt: 1 });
 
-  res.json(decryptedMessages);
+    const formatted = messages.map(msg => ({
+      ...msg._doc,
+      message:
+        msg.type === "text"
+          ? decrypt(msg.message)
+          : msg.message
+    }));
+
+    res.json(formatted);
+
+  } catch (err) {
+    console.error("Fetch messages error:", err);
+    res.status(500).json({ error: "Failed to fetch messages" });
+  }
 });
+
 
 // check user online status
 

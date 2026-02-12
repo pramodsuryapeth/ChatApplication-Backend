@@ -17,9 +17,6 @@ router.post("/image", upload.single("file"), async (req, res) => {
 
     const result = await uploadImageToCloudinary(
       req.file.buffer,
-       {
-    quality: 100
-  },
       req.file.originalname
     );
 
@@ -38,9 +35,6 @@ router.post("/video", upload.single("file"), async (req, res) => {
 
     const result = await uploadVideoToCloudinary(
       req.file.buffer,
-       {
-    quality: 100
-  },
       req.file.originalname
     );
 

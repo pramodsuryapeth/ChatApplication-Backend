@@ -4,6 +4,7 @@ const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
+const cookie = require("cookie-parser");
 
 const connectDB = require("./config/db");
 const socketHandler = require("./socket");
@@ -31,6 +32,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookie());
 
 // routes
 app.use("/api/auth", authRoutes);

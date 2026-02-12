@@ -43,50 +43,55 @@ module.exports = (io) => {
     // =========================
     // 💬 SEND MESSAGE (TEXT / IMAGE / VIDEO URL)
     // =========================
-    socket.on("sendMessage", async (data) => {
-      try {
-        const {
-          chatId,
-          senderId,
-          receiverId,
-          message,
-          type = "text", // text | image | video
-        } = data;
+   socket.on("sendMessage", async (data) => {
+  try {
+    const {
+      chatId,
+      senderId,
+      receiverId,
+      message,
+      type,
+      replyTo
+    } = data;
 
-        if (!message) return;
+    if (!message) return;
 
-        // ✅ Check chat accepted
-        const allowed = await ChatRequest.findOne({
-          chatId,
-          status: "accepted",
-        });
-
-        if (!allowed) {
-          console.log("Chat not accepted. Message blocked.");
-          return;
-        }
-        // ========================
-        // 🔐 Encrypt message (URL or text both)
-        const encryptedMessage = encrypt(message);
-
-        // 💾 Save message
-        const savedMessage = await Message.create({
-          chatId,
-          senderId,
-          receiverId,
-          message: encryptedMessage,
-          type,
-        });
-
-        // 🔓 Decrypt before sending to frontend
-        io.to(chatId).emit("receiveMessage", {
-          ...savedMessage._doc,
-          message: decrypt(savedMessage.message),
-        });
-      } catch (err) {
-        console.error("sendMessage error:", err);
-      }
+    const allowed = await ChatRequest.findOne({
+      chatId,
+      status: "accepted",
     });
+
+    if (!allowed) return;
+
+    let finalMessage = message;
+
+    // 🔐 Encrypt only text
+    if (type === "text") {
+      finalMessage = encrypt(message);
+    }
+
+    const savedMessage = await Message.create({
+      chatId,
+      senderId,
+      receiverId,
+      message: finalMessage,
+      type: type || "text",
+      replyTo: replyTo?.id || null,
+    });
+
+    io.to(chatId).emit("receiveMessage", {
+      ...savedMessage._doc,
+      message:
+        savedMessage.type === "text"
+          ? decrypt(savedMessage.message)
+          : savedMessage.message,
+    });
+
+  } catch (err) {
+    console.error("sendMessage error:", err);
+  }
+});
+
 
     // 👀 MARK MESSAGES AS SEEN
 // =========================
