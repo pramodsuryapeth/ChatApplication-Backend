@@ -4,6 +4,7 @@ const Message = require("../models/Message");
 const auth = require("../middleware/auth");
 const User = require("../models/Users");
 const { decrypt } = require("../utils/crypto");
+const mongoose = require("mongoose");
 
 const router = express.Router();
 
