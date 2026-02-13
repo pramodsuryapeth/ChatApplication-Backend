@@ -10,7 +10,9 @@ const userSchema = new mongoose.Schema(
 
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date },
+    fcmToken: { type: String, default: "" },
   },
+   
   { timestamps: true }
 );
 

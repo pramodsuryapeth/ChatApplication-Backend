@@ -137,4 +137,25 @@ router.post("/logout", auth, async (req, res) => {
   }
 });
 
+// SAVE FCM TOKEN
+router.post("/save-token", auth, async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token missing" });
+    }
+
+    await User.findByIdAndUpdate(req.user.id, {
+      fcmToken: token
+    });
+
+    res.json({ message: "FCM token saved" });
+
+  } catch (err) {
+    console.error("Save token error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
