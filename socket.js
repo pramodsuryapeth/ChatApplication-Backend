@@ -2,6 +2,7 @@ const Message = require("./models/Message");
 const ChatRequest = require("./models/ChatRequest");
 const User = require("./models/Users");
 const { encrypt, decrypt } = require("./utils/crypto");
+const admin = require("../ChatAplication-Backend/firebase");
 
 // ✅ GLOBAL online users tracker
 const onlineUsers = new Set();
@@ -43,7 +44,7 @@ module.exports = (io) => {
     // =========================
     // 💬 SEND MESSAGE (TEXT / IMAGE / VIDEO URL)
     // =========================
-   socket.on("sendMessage", async (data) => {
+socket.on("sendMessage", async (data) => {
   try {
     const {
       chatId,
@@ -79,6 +80,7 @@ module.exports = (io) => {
       replyTo: replyTo?.id || null,
     });
 
+    // 🔥 Real-time emit
     io.to(chatId).emit("receiveMessage", {
       ...savedMessage._doc,
       message:
@@ -87,10 +89,38 @@ module.exports = (io) => {
           : savedMessage.message,
     });
 
+    // ==============================
+    // 🔔 PUSH NOTIFICATION LOGIC
+    // ==============================
+
+    if (!onlineUsers.has(receiverId)) {
+
+      const sender = await User.findById(senderId);
+      const receiver = await User.findById(receiverId);
+
+      if (receiver?.fcmToken) {
+        await admin.messaging().send({
+          token: receiver.fcmToken,
+          notification: {
+            title: sender.name,
+            body: type === "text" ? message : "Sent a file"
+          },
+          data: {
+            chatId: chatId
+          }
+        });
+
+        console.log("Push notification sent");
+      }
+    }
+
   } catch (err) {
     console.error("sendMessage error:", err);
   }
 });
+
+
+
 
 
     // 👀 MARK MESSAGES AS SEEN

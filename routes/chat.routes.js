@@ -39,11 +39,12 @@ router.get("/requests", auth, async (req, res) => {
 
 // ACCEPT CHAT REQUEST
 router.post("/accept", auth, async (req, res) => {
-  const { requestId } = req.body;
+    const { chatId } = req.body;
 
-  await ChatRequest.findByIdAndUpdate(requestId, {
-    status: "accepted",
-  });
+  await ChatRequest.findOneAndUpdate(
+    { chatId },
+    { status: "accepted" }
+  );
 
   res.json({ message: "Chat accepted" });
 });
@@ -128,20 +129,18 @@ router.get("/messages/:chatId",auth, async (req, res) => {
 // GET CONVERSATIONS (Latest message + unread count)
 router.get("/conversations", auth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = new mongoose.Types.ObjectId(req.user.id);
 
     const conversations = await Message.aggregate([
       {
         $match: {
           $or: [
-            { senderId: new mongoose.Types.ObjectId(userId) },
-            { receiverId: new mongoose.Types.ObjectId(userId) }
+            { senderId: userId },
+            { receiverId: userId }
           ]
         }
       },
-      {
-        $sort: { createdAt: -1 }
-      },
+      { $sort: { createdAt: -1 } },
       {
         $group: {
           _id: "$chatId",
@@ -151,7 +150,7 @@ router.get("/conversations", auth, async (req, res) => {
               $cond: [
                 {
                   $and: [
-                    { $eq: ["$receiverId", new mongoose.Types.ObjectId(userId)] },
+                    { $eq: ["$receiverId", userId] },
                     { $eq: ["$seen", false] }
                   ]
                 },
@@ -161,38 +160,73 @@ router.get("/conversations", auth, async (req, res) => {
             }
           }
         }
+      },
+      {
+        $addFields: {
+          otherUserId: {
+            $cond: [
+              { $eq: ["$lastMessage.senderId", userId] },
+              "$lastMessage.receiverId",
+              "$lastMessage.senderId"
+            ]
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "otherUserId",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+      { $unwind: "$user" },
+      {
+        $project: {
+          chatId: "$_id",
+          lastMessage: "$lastMessage.message",
+         lastMessageType: "$lastMessage.type",
+          lastMessageTime: "$lastMessage.createdAt",
+          unreadCount: 1,
+          userId: "$user._id",
+          name: "$user.name",
+          avatar: "$user.avatar",
+          isOnline: "$user.isOnline"
+        }
       }
     ]);
 
-    res.json(conversations);
+    const formatted = conversations.map(conv => ({
+      ...conv,
+      lastMessage:
+        conv.lastMessageType === "text"
+          ? decrypt(conv.lastMessage)
+          : conv.lastMessage
+    }));
+
+    res.json(formatted);
 
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
   }
 });
+
 // MARK ALL AS READ
 router.post("/mark-all-read", auth, async (req, res) => {
-  try {
-    const { chatId } = req.body;
-    const userId = req.user.id;
+  const userId = req.user.id;
 
-    await Message.updateMany(
-      {
-        chatId,
-        receiverId: userId,
-        seen: false
-      },
-      { $set: { seen: true } }
-    );
+  await Message.updateMany(
+    {
+      receiverId: userId,
+      seen: false
+    },
+    { $set: { seen: true } }
+  );
 
-    res.json({ success: true });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server Error" });
-  }
+  res.json({ success: true });
 });
+
 
 
 
