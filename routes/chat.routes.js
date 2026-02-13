@@ -100,7 +100,7 @@ router.get("/accepted", auth, async (req, res) => {
 
 
 // LOAD MESSAGES
-router.get("/messages/:chatId", async (req, res) => {
+router.get("/messages/:chatId",auth, async (req, res) => {
   try {
     const { chatId } = req.params;
 
@@ -124,7 +124,75 @@ router.get("/messages/:chatId", async (req, res) => {
 });
 
 
-// check user online status
+// GET CONVERSATIONS (Latest message + unread count)
+router.get("/conversations", auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          $or: [
+            { senderId: new mongoose.Types.ObjectId(userId) },
+            { receiverId: new mongoose.Types.ObjectId(userId) }
+          ]
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $group: {
+          _id: "$chatId",
+          lastMessage: { $first: "$$ROOT" },
+          unreadCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$receiverId", new mongoose.Types.ObjectId(userId)] },
+                    { $eq: ["$seen", false] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    res.json(conversations);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+// MARK ALL AS READ
+router.post("/mark-all-read", auth, async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    const userId = req.user.id;
+
+    await Message.updateMany(
+      {
+        chatId,
+        receiverId: userId,
+        seen: false
+      },
+      { $set: { seen: true } }
+    );
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
 
 
 module.exports = router;
