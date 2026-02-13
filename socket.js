@@ -2,7 +2,7 @@ const Message = require("./models/Message");
 const ChatRequest = require("./models/ChatRequest");
 const User = require("./models/Users");
 const { encrypt, decrypt } = require("./utils/crypto");
-const admin = require("../firebase");
+const admin = require("./firebase");
 
 // ✅ GLOBAL online users tracker
 const onlineUsers = new Set();
