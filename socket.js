@@ -103,7 +103,11 @@ socket.on("sendMessage", async (data) => {
           token: receiver.fcmToken,
           data: {
             title: sender.name,
-            body: type === "text" ? message : "Sent a file",
+            body:  type === "text"
+        ? `sent you a Chat`
+        : type === "image"
+        ? ` sent you an image`
+        : `sent you a video`,
             chatId: String(chatId),
           },
           webpush: {
