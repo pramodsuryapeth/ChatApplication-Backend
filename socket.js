@@ -106,7 +106,7 @@ socket.on("sendMessage", async (data) => {
             body: type === "text" ? message : "Sent a file"
           },
           data: {
-            chatId: chatId
+            chatId: String(chatId),
           }
         });
 
@@ -140,7 +140,10 @@ socket.on("markSeen", async ({ chatId, userId }) => {
         receiverId: userId,
         seen: false,
       },
-      { $set: { seen: true } }
+      { $set: { seen: true,
+        expireAt: new Date(Date.now() +24 * 60 * 60 * 1000)// 24 houes from now 
+       }
+         }
     );
 
     console.log("Updated:", unreadMessages.length);
