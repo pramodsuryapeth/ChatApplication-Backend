@@ -81,13 +81,30 @@ socket.on("sendMessage", async (data) => {
     });
 
     // 🔥 Real-time emit
-    io.to(chatId).emit("receiveMessage", {
-      ...savedMessage._doc,
-      message:
-        savedMessage.type === "text"
-          ? decrypt(savedMessage.message)
-          : savedMessage.message,
-    });
+   const populatedMessage = await Message.findById(savedMessage._id)
+  .populate("replyTo");
+
+io.to(chatId).emit("receiveMessage", {
+  ...populatedMessage._doc,
+
+  message:
+    populatedMessage.type === "text"
+      ? decrypt(populatedMessage.message)
+      : populatedMessage.message,
+
+  replyTo: populatedMessage.replyTo
+    ? {
+        _id: populatedMessage.replyTo._id,
+        message:
+          populatedMessage.replyTo.type === "text"
+            ? decrypt(populatedMessage.replyTo.message)
+            : populatedMessage.replyTo.message,
+        senderId: populatedMessage.replyTo.senderId,
+        type: populatedMessage.replyTo.type,
+      }
+    : null,
+});
+
 
     // ==============================
     // 🔔 PUSH NOTIFICATION LOGIC
