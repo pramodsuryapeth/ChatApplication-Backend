@@ -107,6 +107,8 @@ router.get("/messages/:chatId",auth, async (req, res) => {
     const { chatId } = req.params;
 
     const messages = await Message.find({ chatId })
+      // .sort({ createdAt: 1 });
+      .populate("replyTo")   // 🔥 Important
       .sort({ createdAt: 1 });
 
     const formatted = messages.map(msg => ({
@@ -114,8 +116,19 @@ router.get("/messages/:chatId",auth, async (req, res) => {
       message:
         msg.type === "text"
           ? decrypt(msg.message)
-          : msg.message
+          : msg.message,
+
+           replyTo: msg.replyTo
+        ? {
+            ...msg.replyTo._doc,
+            message:
+              msg.replyTo.type === "text"
+                ? decrypt(msg.replyTo.message)
+                : msg.replyTo.message
+          }
+        : null
     }));
+  
 
     res.json(formatted);
 
@@ -221,11 +234,17 @@ router.post("/mark-all-read", auth, async (req, res) => {
       receiverId: userId,
       seen: false
     },
-    { $set: { seen: true } }
+    { 
+      $set: { 
+        seen: true,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      } 
+    }
   );
 
   res.json({ success: true });
 });
+
 
 
 

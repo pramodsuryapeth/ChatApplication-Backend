@@ -34,7 +34,7 @@ const messageSchema = new mongoose.Schema(
     // Auto delete after 24 hours
     expiresAt: {
       type: Date,
-      default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
+      // default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
       index: { expires: 0 },
     },
 
