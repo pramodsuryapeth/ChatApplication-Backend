@@ -101,12 +101,15 @@ socket.on("sendMessage", async (data) => {
       if (receiver?.fcmToken) {
         await admin.messaging().send({
           token: receiver.fcmToken,
-          notification: {
-            title: sender.name,
-            body: type === "text" ? message : "Sent a file"
-          },
           data: {
+            title: sender.name,
+            body: type === "text" ? message : "Sent a file",
             chatId: String(chatId),
+          },
+          webpush: {
+              headers:{
+                Urgency: "high"
+              }
           }
         });
 
