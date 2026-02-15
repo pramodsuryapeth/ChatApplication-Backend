@@ -119,13 +119,9 @@ io.to(chatId).emit("receiveMessage", {
         await admin.messaging().send({
           token: receiver.fcmToken,
           data: {
-            title: sender.name,
-            body:  type === "text"
-        ? `sent you a Chat`
-        : type === "image"
-        ? ` sent you an image`
-        : `sent you a video`,
-            chatId: String(chatId),
+           senderName: sender.name,
+      type: type,
+      chatId: String(chatId),
           },
           webpush: {
               headers:{
